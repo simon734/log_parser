@@ -7,6 +7,7 @@ from datetime import datetime
 class log_basic_info:
     def __init__(self):
         self.uin = None
+        self.log_level = None
         self.relay_tid = None
         self.relay_tcp_inited = None
         self.relay_udp_inited = None
@@ -19,30 +20,28 @@ class log_basic_info:
         if m:
             self.relay_tcp_inited = m.group(1)
             self.relay_tid = line.prefix.tid
-            logging.info('get_relay_info: tcp init is %s, tid=%s', self.relay_tcp_inited, self.relay_tid)
+            logging.debug('get_relay_info: tcp init is %s, tid=%s', self.relay_tcp_inited, self.relay_tid)
             return True
         m = re.search(LKEY_UDP_RELAY_INIT, line.msg)
         if m:
             self.relay_udp_inited = m.group(1)
             self.relay_tid = line.prefix.tid
-            logging.info('get_relay_info: udp init is %s, tid=%s', self.relay_udp_inited, self.relay_tid)
+            logging.debug('get_relay_info: udp init is %s, tid=%s', self.relay_udp_inited, self.relay_tid)
             return True
 
         return False
 
     def get_uin(self, line):
         p = re.compile(LKEY_BASIC_UIN)
-        print('get_uin:', line.msg)
         m = p.search(line.msg)
         if m:
-            print('uin:', m.group(1))
+            self.uin = m.group(1)
 
     def get_loglevel(self, line):
         p = re.compile(LKEY_BASIC_LOG_LEVEL)
-        print('get_loglevel:', line.msg)
         m = p.search(line.msg)
         if m:
-            print('log level:', m.group(1))
+            self.log_level = m.group(1)
 
 # prefix
 class log_prefix:
