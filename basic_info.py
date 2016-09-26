@@ -12,6 +12,9 @@ class log_basic_info:
         self.relay_tcp_inited = None
         self.relay_udp_inited = None
 
+    def __str__(self):
+        return ''''basic_info:uin={}, relay_thread_id={}, log_level={}'''.format(self.uin, self.relay_tid, self.log_level)
+
     def has_relay_init(self):
         return self.relay_tcp_inited and self.relay_udp_inited
 
@@ -35,13 +38,13 @@ class log_basic_info:
         p = re.compile(LKEY_BASIC_UIN)
         m = p.search(line.msg)
         if m:
-            self.uin = m.group(1)
+            self.uin = m.group(1).decode('utf-8')
 
     def get_loglevel(self, line):
         p = re.compile(LKEY_BASIC_LOG_LEVEL)
         m = p.search(line.msg)
         if m:
-            self.log_level = m.group(1)
+            self.log_level = m.group(1).decode('utf-8')
 
 # prefix
 class log_prefix:
