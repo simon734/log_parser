@@ -14,6 +14,7 @@ LKEY_SOCK_NEW_SOCK = b'WSPSocket.*\Wsocket=(\d+).*token=(\d+)'
 LKEY_SOCK_CLOSE_SOCK = b'WSPCloseSocket.*ret=(-?\d+).*err=(-?\d+)'
 LKEY_SOCK_NEGOTIATION = b'Negotiation'
 LKEY_SOCK_COMM_STAT = b'ReportCommunicationStatistic.*guid_str=([\w|-]+).*proxy_ip=([\d|.]+).*proxy_port=(\d+).*proxy_idc=(\d+).*game_ip=([\d|.]+).*game_port=(\d+).*game_idc=(\d+)'
+LKEY_SOCK_MAKE_DECISION = b'Ready to make decision.*socket=(\d+)'
 
 # keys for TCP
 LKEY_TCP_RELAY_INIT = b'RelayMgr::InternalInit, TCP init is (\w+)'

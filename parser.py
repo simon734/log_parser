@@ -19,6 +19,7 @@ ptn_new_socket = re.compile(LKEY_SOCK_NEW_SOCK)
 ptn_close_socket = re.compile(LKEY_SOCK_CLOSE_SOCK)
 ptn_negotiation = re.compile(LKEY_SOCK_NEGOTIATION)
 ptn_comm_stat = re.compile(LKEY_SOCK_COMM_STAT)
+ptn_make_decision = re.compile(LKEY_SOCK_MAKE_DECISION)
 ptn_token  = re.compile(LKEY_COMMON_TOKEN)
 ptn_sess_type = re.compile(LKEY_COMMON_SESS_TYPE)
 
@@ -122,11 +123,12 @@ class lsp_socket:
         if self.sock_class != None:
             logging.debug('update_sock_class, token=%s, the socket %s already has its class %s, now updating again with class %s',
                     self.real_token, self.sid, self.sock_class, sock_class)
-            return
+            pass
+            #return
         self.sock_class = sock_class
 
     def update_token(self, token):
-        if token != self.fake_token:
+        if token != self.fake_token and self.real_token == None:
             self.real_token = token
 
     def has_closed(self):
@@ -197,7 +199,7 @@ class lsp_socket:
         if ret == 0 and err == 0 and recv_bytes > 0:
             stat.recv_valid_packs += 1
             stat.recv_bytes += recv_bytes
-        else:
+        elif ret != 0 and err != 997 and err != 10035:
             logging.warning('parse_recv:ret=%d, err=%d, recv_bytes=%d, socket=%s, log=%s', ret, err, recv_bytes, self.sid, line)
             self.key_logs.append(line)
         return True
@@ -230,7 +232,7 @@ class lsp_socket:
         if ret == 0 and err == 0 and send_bytes > 0:
             stat.send_valid_packs += 1
             stat.send_bytes += send_bytes
-        else:
+        elif ret != 0 and err != 997 and err != 10035:
             logging.warning('parse_send:ret=%d, err=%d, send_bytes=%d, socket=%s, log=%s', ret, err, send_bytes, self.sid, line)
             self.key_logs.append(line)
         return True
@@ -294,6 +296,9 @@ class lsp_session:
 
     def add_sock(self, sock):
         self.socks.append(sock)
+        if len(self.socks) == 1:
+            sock.update_sock_class('local socket', self.token)
+
         if self.has_sock_class_updated:
             self.has_sock_class_updated = False
 
@@ -319,6 +324,10 @@ class lsp_session:
 
     def parse_line(self, line):
         has_consumed = self.parse_is_allow_relay(line)
+        if has_consumed:
+            return True
+
+        has_consumed = self.parse_make_decision(line)
         if has_consumed:
             return True
 
@@ -348,6 +357,19 @@ class lsp_session:
         logging.debug('parse_is_allow_relay, token=%s, result=%s, log=%s', self.token, self.is_allow_relay, line)
         return True
 
+    def parse_make_decision(self, line):
+        if lsp_basic_info.relay_tid != line.prefix.tid:
+            return False
+
+        m = ptn_make_decision.search(line.msg)
+        if not m:
+            return False
+
+        sid = m.group(1)
+        sock = get_sock_object(sid, line)
+        if sock:
+            sock.update_sock_class('remote socket', self.token)
+
     def parse_is_allow_acc(self, line):
         m = ptn_tcp_is_allow_acc.search(line.msg)
         if not m:
@@ -355,8 +377,9 @@ class lsp_session:
 
         if not m:
             return False
+
+        self.is_allow_relay = True
         if m.group(1) == b'true' or m.group(1) == b'acc':
-            self.is_allow_relay = True
             self.is_allow_acc = True
         logging.debug('parse_is_allow_acc, token=%s, result=%s, log=%s', self.token, self.is_allow_acc, line)
         return True
@@ -393,8 +416,12 @@ class lsp_session:
         return True
 
     def __str__(self):
-        return 'token:{0.token}, type={0.kind}, is_allow_relay:{0.is_allow_relay}, is_allow_acc:{0.is_allow_acc},\n\n{0.sock_comm_stat}'.format(
-                self )
+        if self.is_allow_acc:
+            return 'token:{0.token}, type={0.kind}, is_allow_relay:{0.is_allow_relay}, is_allow_acc:{0.is_allow_acc},\n\n{0.sock_comm_stat}'.format(
+                    self )
+        else:
+            return 'token:{0.token}, type={0.kind}, is_allow_relay:{0.is_allow_relay}, is_allow_acc:{0.is_allow_acc}\n'.format(
+                    self )
 
 # parse token line
 def parse_token_line(token, line):
@@ -504,8 +531,7 @@ def main():
 
     for k,v in sorted(lsp_sess_list.items()):
         if not v.is_allow_relay:
-            pass
-            #continue
+            continue
         logging.error('------begin--->>>>:')
         logging.error('%s:\n', v)
         for log in v.key_logs:
