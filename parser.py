@@ -199,7 +199,7 @@ class lsp_socket:
         if ret == 0 and err == 0 and recv_bytes > 0:
             stat.recv_valid_packs += 1
             stat.recv_bytes += recv_bytes
-        elif ret != 0 and err != 997 and err != 10035:
+        elif (ret == 0 and err != 997) or (ret == -1 and err != 10035):
             logging.warning('parse_recv:ret=%d, err=%d, recv_bytes=%d, socket=%s, log=%s', ret, err, recv_bytes, self.sid, line)
             self.key_logs.append(line)
         return True
@@ -232,7 +232,7 @@ class lsp_socket:
         if ret == 0 and err == 0 and send_bytes > 0:
             stat.send_valid_packs += 1
             stat.send_bytes += send_bytes
-        elif ret != 0 and err != 997 and err != 10035:
+        elif (ret == 0 and err != 997) or (ret == -1 and err != 10035):
             logging.warning('parse_send:ret=%d, err=%d, send_bytes=%d, socket=%s, log=%s', ret, err, send_bytes, self.sid, line)
             self.key_logs.append(line)
         return True
