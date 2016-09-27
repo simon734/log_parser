@@ -81,10 +81,16 @@ class lsp_socket:
         if self.kind != b'TCP' and self.kind != b'UDP':
             return 'socket={}, type=Unknow'.format(self.sid.decode('utf-8'))
 
+        rtoken_str = 'None'
+        if self.real_token:
+            rtoken_str = self.real_token.decode('utf-8')
+        ftoken_str = 'None'
+        if self.fake_token:
+            ftoken_str = self.fake_token.decode('utf-8')
         output = io.StringIO()
         output.write('''socket={1}, type={kind}, class={0.sock_class}, real_token={real_token}, fake_token={fake_token},
                     begin_time={0.begin_time}, end_time={0.end_time}\n'''.format(
-                        self, self.sid.decode('utf-8'), kind=self.kind.decode('utf-8'), real_token=self.real_token.decode('utf-8'), fake_token=self.fake_token.decode('utf-8')))
+                        self, self.sid.decode('utf-8'), kind=self.kind.decode('utf-8'), real_token=rtoken_str, fake_token=ftoken_str))
 
         if self.kind == b'TCP' and self.connect_dest != None:
             output.write('''connect_dest={1}, connect_initiate_time={0.connect_initiate_time},\n'''.format(self, self.connect_dest.decode('utf-8')))
@@ -544,6 +550,14 @@ def main():
             logging.error('\n')
 
         logging.error('<<<---end------\n\n')
+
+    for k, sock_list in lsp_sock_list.items():
+        logging.error('socket %s details-->', k)
+        for sock in sock_list:
+            logging.error('%s', sock)
+            for log in sock.key_logs:
+                logging.error('%s', log)
+            logging.error('\n')
 
 if __name__ == "__main__":
     logging.basicConfig(format='%(message)s', level=logging.INFO)
